@@ -1,6 +1,6 @@
 // import { getDocumentCount } from '@gig/elasticsearch';
 
-import { createGig, getGig, getGigs } from '../services/gig.service.js';
+import { createGig, getGig, getGigs, getGigsByIds } from '../services/gig.service.js';
 import createError from "../utils/createError.js";
 
 
@@ -54,23 +54,62 @@ export const gigGet = async (req, res, next) => {
 };
 
 export const gigsGet = async (req, res, next) => {
-    const q = req.body.filter;
-    console.log(q);
-    // const q = req.query;
+    const q = req.body.filter || {};
+
+    let gigIds = q.gigIds;
+
+    // Check if gigIds is a string, then parse it to an array
+    if (typeof gigIds === 'string') {
+        try {
+            gigIds = JSON.parse(gigIds);
+        } catch (error) {
+            return next(createError(400, "Invalid gigIds format"));
+        }
+    }
+
     const filters = {
+        ...(gigIds && gigIds.length > 0 && { _id: { $in: gigIds } }),
         ...(q.userId && { userId: q.userId }),
         ...(q.cat && { cat: q.cat }),
-        ...(q.subCat && { subCat: { $in: q.subCat } }),  // Handle array filtering
-        ...((q.price && q.price.length === 2) && {  // Handle min and max price range
+        ...(q.subCat && { subCat: { $in: q.subCat } }),
+        ...((q.price && q.price.length === 2) && {
             price: {
-                $gte: q.price[0],  // min price
-                $lte: q.price[1],  // max price
+                $gte: q.price[0],
+                $lte: q.price[1],
             }
         }),
         ...(q.search && { title: { $regex: q.search, $options: "i" } }),
     };
+
     try {
         const gigs = await getGigs(filters, q);
+        res.status(200).send(gigs);
+    } catch (err) {
+        next(err);
+    }
+};
+export const gigsGetByIdsRec = async (req, res, next) => {
+    const { gigIds } = req.body;
+
+    // Check if gigIds is provided and is an array
+    if (!Array.isArray(gigIds) || gigIds.length === 0) {
+        return next(createError(400, "Invalid or missing gigIds"));
+    }
+
+    // Convert string IDs to ObjectId if necessary
+    const objectIdGigIds = gigIds.map(id => {
+        try {
+            return new ObjectId(id); // Replace with appropriate ObjectId handling
+        } catch (error) {
+            return next(createError(400, "Invalid gigId format"));
+        }
+    });
+
+    try {
+        const gigs = await getGigsByIds(objectIdGigIds);
+        if (gigs.length === 0) {
+            return next(createError(404, "No gigs found"));
+        }
         res.status(200).send(gigs);
     } catch (err) {
         next(err);

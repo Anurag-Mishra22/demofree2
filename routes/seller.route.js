@@ -9,4 +9,5 @@ router.get('/:email', verifyToken, getSeller);
 // Route for getting seller by ID
 router.get('/id/:id', verifyToken, getSellerByIdController);
 
+
 export default router;

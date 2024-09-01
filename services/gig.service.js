@@ -37,6 +37,11 @@ const getGigs = async (filters, q) => {
     return gigs;
 }
 
+const getGigsByIds = async (gigIds) => {
+    // Assume you have a Mongoose model or MongoDB collection reference
+    return await GigModel.find({ _id: { $in: gigIds } }); // Adjust according to your DB setup
+};
+
 
 
 
@@ -44,5 +49,7 @@ const getGigs = async (filters, q) => {
 export {
     createGig,
     getGig,
-    getGigs
+    getGigs,
+    getGigsByIds
+
 };

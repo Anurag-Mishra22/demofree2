@@ -76,3 +76,4 @@ export const getSellerByIdController = async (req, res, next) => {
         next(err);
     }
 };
+

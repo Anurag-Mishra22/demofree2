@@ -146,3 +146,42 @@ export const confirm = async (req, res, next) => {
         next(err);
     }
 };
+
+export const updateOrderStatusToCompleted = async (req, res, next) => {
+    try {
+        const { orderId } = req.body; // Extract orderId from the request body
+        console.log(orderId);
+
+        if (!orderId) {
+            return next(createError(400, "Order ID is required"));
+        }
+
+        // Validate that orderId is a valid ObjectId format if needed
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            return next(createError(400, "Invalid Order ID"));
+        }
+
+        const updatedOrder = await OrderModel.findByIdAndUpdate(
+            orderId,
+            {
+                $set: {
+                    status: "completed",
+                    isCompleted: true,
+                },
+            },
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedOrder) {
+            return next(createError(404, "Order not found"));
+        }
+
+        res.status(200).send({
+            message: "Order status updated to completed",
+            order: updatedOrder,
+        });
+    } catch (error) {
+        console.error(error);
+        next(createError(500, "Internal Server Error"));
+    }
+};
